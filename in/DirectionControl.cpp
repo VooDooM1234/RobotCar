@@ -1,20 +1,13 @@
 #include "DirectionControl.h"
 #include "Pins.h"
 
-Pins motorPins;
-// move commands wont work with motorPins.IN# for some reason
-int IN1 = 8;
-int IN2 = 9;
-int IN3 = 10;
-int IN4 = 11;
-
 void DirectionControl::direcetionSetup()
 {
     Serial.println("Motor setup starting");
-    pinMode(motorPins.IN1, OUTPUT);
-    pinMode(motorPins.IN2, OUTPUT);
-    pinMode(motorPins.IN3, OUTPUT);
-    pinMode(motorPins.IN4, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
     Serial.println("Motor setup complete");
 }
 void DirectionControl::directionSelect(int direction){

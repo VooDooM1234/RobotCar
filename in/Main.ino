@@ -2,61 +2,55 @@
     AVR Robot car code
 */
 #include "DirectionControl.h"
-#include "SensorDistance.h"
-
+#include "SensorServo.h"
+#include "SensorUltraSonic.h"
 #include "Pins.h"
-#include <Servo.h>
 
 DirectionControl directionControl = DirectionControl();
-SensorDistance sensorDistance = SensorDistance();
+SensorServo sensorServo = SensorServo();
+SensorUltraSonic ultraSonic = SensorUltraSonic();
 
-Servo sonarServo;
-Pins _pins;
+Pins pins;
 
-int distance = 0;
+const int stopMovingInterval = 500;
+int motorUpdate = 0;
+bool goFlag = true;
 
 void setup()
 {
   Serial.println("Lanuching Setup");
   Serial.begin(9600);
   directionControl.direcetionSetup();
-  sensorDistance.ultraSonicSetup();
-
-  sonarServo.attach(_pins.sonarMotorPin);
-  ServoMoveCentre();
+  sensorServo.sensorServoSetup();
+  ultraSonic.ultraSonicSetup();
+  directionControl.directionSelect(directionControl.direction::forward);
 }
 
 void loop()
 {
+  sensorServo.ServoMovementRoutine();
+  ultraSonic.measureDistance(sensorServo.getIsServoMovementComplete());
 
-  sensorDistance.measureDistance();
-  delay(500);
-  servoMoveLeft();
-  sensorDistance.measureDistance();
-  delay(500);
-  servoMoveRight();
-  sensorDistance.measureDistance();
-  delay(500);
+  Serial.println("Is Clear?: ");
+  Serial.println(ultraSonic.isClear(ultraSonic.getDistance()));
 
+  Serial.print("Get Distance: ");
+  Serial.println(ultraSonic.getDistance());
 
-  //directionControl.directionSelect(directionControl.direction::forward);
-  // delay(1000);
-  // directionControl.directionSelect(directionControl.direction::stop);
-  // delay(1000);
-}
+  if (ultraSonic.isClear(ultraSonic.getDistance()) == true && goFlag == true)
+  {
+    directionControl.directionSelect(directionControl.direction::forward);
+  }
+  else
+  {
+    directionControl.directionSelect(directionControl.direction::stop);
+    goFlag = false;
+  }
 
-void servoMoveLeft()
-{
-  sonarServo.write(0);
-  delay(500);
-}
-void servoMoveRight()
-{
-  sonarServo.write(180);
-  delay(500);
-}
-void ServoMoveCentre()
-{
-   sonarServo.write(90);
-  delay(500);
+  if (millis() >= motorUpdate + stopMovingInterval)
+  {
+    motorUpdate += stopMovingInterval;
+    goFlag = true;
+  }
+  Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 }

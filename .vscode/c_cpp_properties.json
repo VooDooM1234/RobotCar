@@ -4,7 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "C:\\Program Files (x86)\\Arduino\\tools\\**",
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**"
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**",
+                "c:\\\\Program Files (x86)\\\\Arduino\\\\hardware\\\\tools\\\\avr\\\\avr\\\\include\\\\**",
+                "c:\\\\Program Files (x86)\\\\Arduino\\\\hardware\\\\tools\\\\avr\\\\lib\\\\gcc\\\\avr\\\\5.4.0\\\\include\\\\**"
             ],
             "forcedInclude": [
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
