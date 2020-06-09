@@ -11,17 +11,23 @@ private:
     const int IN3 = 10;
     const int IN4 = 11;
 
+    int robotDirection = 0;
+
     void moveForward();
     void moveBackwards();
     void moveLeft();
     void moveRight();
     void stopMove();
 
+    void setCurrentRobotDirection(int);
+
     const int speed = 255;
 
 public:
     void directionSelect(int direction);
     void direcetionSetup();
+
+    int getCurrentRobotDirection();
 
     enum direction
     {

@@ -10,34 +10,41 @@ void DirectionControl::direcetionSetup()
     pinMode(IN4, OUTPUT);
     Serial.println("Motor setup complete");
 }
-void DirectionControl::directionSelect(int direction){
+
+// Robot directional control state machine
+void DirectionControl::directionSelect(int direction)
+{
     switch (direction)
     {
     case forward:
-    moveForward();
+        moveForward();
         break;
-     case reverse:
-    moveBackwards();
-        break;
-
-         case right:
-    moveRight();
+    case reverse:
+        moveBackwards();
         break;
 
-         case left:
-    moveLeft();
+    case right:
+        moveRight();
         break;
 
-        case stop:
-    stopMove();
+    case left:
+        moveLeft();
         break;
-        
 
-    default:
-    stopMove();
+    case stop:
+        stopMove();
         break;
-        
     }
+}
+
+void DirectionControl::setCurrentRobotDirection(int d)
+{
+    robotDirection = d;
+}
+
+int DirectionControl::getCurrentRobotDirection()
+{
+    return robotDirection;
 }
 
 void DirectionControl::moveForward()
@@ -47,6 +54,7 @@ void DirectionControl::moveForward()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
+    setCurrentRobotDirection(forward);
 }
 
 void DirectionControl::moveBackwards()
@@ -56,6 +64,7 @@ void DirectionControl::moveBackwards()
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
+    setCurrentRobotDirection(reverse);
 }
 
 void DirectionControl::moveRight()
@@ -65,6 +74,7 @@ void DirectionControl::moveRight()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, LOW);
+    setCurrentRobotDirection(right);
 }
 void DirectionControl::moveLeft()
 {
@@ -73,6 +83,7 @@ void DirectionControl::moveLeft()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
+    setCurrentRobotDirection(left);
 }
 void DirectionControl::stopMove()
 {
@@ -81,4 +92,5 @@ void DirectionControl::stopMove()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, LOW);
+    setCurrentRobotDirection(stop);
 }

@@ -12,34 +12,41 @@ void DirectionControl::direcetionSetup()
     pinMode(IN4, 0x1);
     Serial.println("Motor setup complete");
 }
-void DirectionControl::directionSelect(int direction){
+
+// Robot directional control state machine
+void DirectionControl::directionSelect(int direction)
+{
     switch (direction)
     {
     case forward:
-    moveForward();
+        moveForward();
         break;
-     case reverse:
-    moveBackwards();
-        break;
-
-         case right:
-    moveRight();
+    case reverse:
+        moveBackwards();
         break;
 
-         case left:
-    moveLeft();
+    case right:
+        moveRight();
         break;
 
-        case stop:
-    stopMove();
+    case left:
+        moveLeft();
         break;
 
-
-    default:
-    stopMove();
+    case stop:
+        stopMove();
         break;
-
     }
+}
+
+void DirectionControl::setCurrentRobotDirection(int d)
+{
+    robotDirection = d;
+}
+
+int DirectionControl::getCurrentRobotDirection()
+{
+    return robotDirection;
 }
 
 void DirectionControl::moveForward()
@@ -49,6 +56,7 @@ void DirectionControl::moveForward()
     digitalWrite(IN2, 0x0);
     digitalWrite(IN3, 0x1);
     digitalWrite(IN4, 0x0);
+    setCurrentRobotDirection(forward);
 }
 
 void DirectionControl::moveBackwards()
@@ -58,6 +66,7 @@ void DirectionControl::moveBackwards()
     digitalWrite(IN2, 0x1);
     digitalWrite(IN3, 0x0);
     digitalWrite(IN4, 0x1);
+    setCurrentRobotDirection(reverse);
 }
 
 void DirectionControl::moveRight()
@@ -67,6 +76,7 @@ void DirectionControl::moveRight()
     digitalWrite(IN2, 0x0);
     digitalWrite(IN3, 0x0);
     digitalWrite(IN4, 0x0);
+    setCurrentRobotDirection(right);
 }
 void DirectionControl::moveLeft()
 {
@@ -75,6 +85,7 @@ void DirectionControl::moveLeft()
     digitalWrite(IN2, 0x0);
     digitalWrite(IN3, 0x1);
     digitalWrite(IN4, 0x0);
+    setCurrentRobotDirection(left);
 }
 void DirectionControl::stopMove()
 {
@@ -83,16 +94,25 @@ void DirectionControl::stopMove()
     digitalWrite(IN2, 0x0);
     digitalWrite(IN3, 0x0);
     digitalWrite(IN4, 0x0);
+    setCurrentRobotDirection(stop);
 }
 # 1 "e:\\Projects\\RobotCar\\in\\Main.ino"
-/*
+/**
 
-    AVR Robot car code
+ * @brief  Robot car with ultrasonic senor collision detection
 
-*/
-# 5 "e:\\Projects\\RobotCar\\in\\Main.ino"
-# 6 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
-# 7 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
+ * @note   
+
+ * @baudRate: 9600
+
+ * @board: Arduino uno
+
+ * @retval 
+
+ */
+# 9 "e:\\Projects\\RobotCar\\in\\Main.ino"
+# 10 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
+# 11 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
 
 
 DirectionControl directionControl = DirectionControl();
@@ -112,34 +132,31 @@ void setup()
   directionControl.direcetionSetup();
   sensorServo.sensorServoSetup();
   ultraSonic.ultraSonicSetup();
-  directionControl.directionSelect(directionControl.direction::forward);
+  directionControl.directionSelect(directionControl.direction::stop);
 }
 
 void loop()
 {
   sensorServo.ServoMovementRoutine();
-  ultraSonic.measureDistance(sensorServo.getIsServoMovementComplete());
+  ultraSonic.measureDistance();
 
-  Serial.println("Is Clear?: ");
-  Serial.println(ultraSonic.isClear(ultraSonic.getDistance()));
-
-  Serial.print("Get Distance: ");
-  Serial.println(ultraSonic.getDistance());
-
-  if (ultraSonic.isClear(ultraSonic.getDistance()) == true && goFlag == true)
+  if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::left)
+  {
+    directionControl.directionSelect(directionControl.direction::left);
+  }
+  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && directionControl.getCurrentRobotDirection() != directionControl.direction::forward)
   {
     directionControl.directionSelect(directionControl.direction::forward);
   }
-  else
+  else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::right)
   {
-    directionControl.directionSelect(directionControl.direction::stop);
-    goFlag = false;
+    directionControl.directionSelect(directionControl.direction::right);
+  }
+  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::reverse)
+  {
+    directionControl.directionSelect(directionControl.direction::reverse);
   }
 
-  if (millis() >= motorUpdate + stopMovingInterval)
-  {
-    motorUpdate += stopMovingInterval;
-    goFlag = true;
-  }
-  Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+
 }

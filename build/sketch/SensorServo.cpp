@@ -12,26 +12,39 @@ void SensorServo::sensorServoSetup()
     servoMoveCentre();
     sonarServo.attach(sonarServoPin);
 }
-
+//Servo stat Machine Service routine
+//Switches every interval of 1000ms
 void SensorServo::ServoMovementRoutine()
 {
-    int i = 1;
-    while (i <= 3)
+    switch (servoState)
     {
-        //trigger servo movement at every 1000ms interval
-        if (millis() >= lastUpdate + servoMoveInterval)
+    case 1:
+        currentTime = millis();
+        if (currentTime - previousTime >= servoMoveInterval)
         {
-            lastUpdate += servoMoveInterval;
-
-            directionSelect(i);
-            // Serial.print("Servo Movement Time:");
-            // Serial.println(lastUpdate);
-            motorTick = true;
-           
-            i++;
-            isServoMovementComplete(true);
+            servoMoveCentre();
+            previousTime = currentTime;
+            servoState = 2;
         }
-        isServoMovementComplete(false);
+        break;
+    case 2:
+        currentTime = millis();
+        if (currentTime - previousTime >= servoMoveInterval)
+        {
+            servoMoveLeft();
+            previousTime = currentTime;
+            servoState = 3;
+        }
+        break;
+    case 3:
+        currentTime = millis();
+        if (currentTime - previousTime >= servoMoveInterval)
+        {
+            servoMoveRight();
+            previousTime = currentTime;
+            servoState = 1;
+        }
+        break;
     }
 }
 
@@ -45,34 +58,31 @@ bool SensorServo::getIsServoMovementComplete()
     return motorTick;
 }
 
-void SensorServo::directionSelect(int direction)
+void SensorServo::setCurrentServoState(int state)
 {
-    switch (direction)
-    {
-    case 1:
-        servoMoveCentre();
-        break;
-    case 2:
-        servoMoveRight();
-        break;
-    case 3:
-        servoMoveLeft();
-        break;
-    }
+    currentServoState = state;
+}
+
+int SensorServo::getCurrentServoState()
+{
+    return currentServoState;
 }
 
 void SensorServo::servoMoveLeft()
 {
     sonarServo.write(0);
+    setCurrentServoState(left);
     Serial.println("Sonar moving left");
 }
 void SensorServo::servoMoveRight()
 {
     sonarServo.write(180);
+    setCurrentServoState(right);
     Serial.println("Sonar moving right");
 }
 void SensorServo::servoMoveCentre()
 {
     sonarServo.write(90);
+    setCurrentServoState(centre);
     Serial.println("Sonar moving centre");
 }

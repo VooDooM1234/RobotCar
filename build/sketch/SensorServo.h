@@ -8,23 +8,32 @@ class SensorServo
 private:
     const int sonarServoPin = 12;
     const int servoMoveInterval = 1000;
-   
 
-    long lastUpdate = 0;
-    
+    volatile unsigned long currentTime = 0;
+    volatile unsigned long previousTime = 0;
+
+    //initial servo state set to centre postion.
+    int servoState = 1;
+    int currentServoState = 0;
 
     bool motorTick = false;
 
     void servoMoveLeft();
     void servoMoveRight();
     void servoMoveCentre();
-    void directionSelect(int direction);
+    void isServoMovementComplete(bool);
+    void setCurrentServoState(int);
 
 public:
+    int centre = 1;
+    int left = 2;
+    int right = 3;
+    
     void sensorServoSetup();
     void ServoMovementRoutine();
-    void isServoMovementComplete(bool);
 
     bool getIsServoMovementComplete();
+
+    int getCurrentServoState();
 };
 #endif

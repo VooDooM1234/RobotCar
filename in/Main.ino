@@ -1,6 +1,10 @@
-/*
-    AVR Robot car code
-*/
+/**
+ * @brief  Robot car with ultrasonic senor collision detection
+ * @note   
+ * @baudRate: 9600
+ * @board: Arduino uno
+ * @retval 
+ */
 #include "DirectionControl.h"
 #include "SensorServo.h"
 #include "SensorUltraSonic.h"
@@ -23,34 +27,31 @@ void setup()
   directionControl.direcetionSetup();
   sensorServo.sensorServoSetup();
   ultraSonic.ultraSonicSetup();
-  directionControl.directionSelect(directionControl.direction::forward);
+  directionControl.directionSelect(directionControl.direction::stop);
 }
 
 void loop()
 {
   sensorServo.ServoMovementRoutine();
-  ultraSonic.measureDistance(sensorServo.getIsServoMovementComplete());
+  ultraSonic.measureDistance();
 
-  Serial.println("Is Clear?: ");
-  Serial.println(ultraSonic.isClear(ultraSonic.getDistance()));
-
-  Serial.print("Get Distance: ");
-  Serial.println(ultraSonic.getDistance());
-
-  if (ultraSonic.isClear(ultraSonic.getDistance()) == true && goFlag == true)
+  if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::left)
+  {
+    directionControl.directionSelect(directionControl.direction::left);
+  }
+  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && directionControl.getCurrentRobotDirection() != directionControl.direction::forward)
   {
     directionControl.directionSelect(directionControl.direction::forward);
   }
-  else
+  else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::right)
   {
-    directionControl.directionSelect(directionControl.direction::stop);
-    goFlag = false;
+    directionControl.directionSelect(directionControl.direction::right);
   }
+  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::reverse)
+  {
+    directionControl.directionSelect(directionControl.direction::reverse);
+  }
+  
 
-  if (millis() >= motorUpdate + stopMovingInterval)
-  {
-    motorUpdate += stopMovingInterval;
-    goFlag = true;
-  }
-  Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+ 
 }
