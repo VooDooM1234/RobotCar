@@ -7,9 +7,9 @@ class SensorServo
 {
 private:
     const int sonarServoPin = 12;
-    const int servoMoveInterval = 1000;
+    const int servoMoveInterval = 500;
 
-    volatile unsigned long currentTime = 0;
+    volatile unsigned long currentTimeServo = 0;
     volatile unsigned long previousTime = 0;
 
     //initial servo state set to centre postion.
@@ -28,7 +28,7 @@ public:
     int centre = 1;
     int left = 2;
     int right = 3;
-    
+
     void sensorServoSetup();
     void ServoMovementRoutine();
 

@@ -10,33 +10,56 @@ void DirectionControl::direcetionSetup()
     pinMode(IN2, 0x1);
     pinMode(IN3, 0x1);
     pinMode(IN4, 0x1);
+    pinMode(ENA, 0x1);
+    pinMode(ENB, 0x1);
     Serial.println("Motor setup complete");
 }
 
 // Robot directional control state machine
 void DirectionControl::directionSelect(int direction)
 {
-    switch (direction)
+    currentTimeRobot = millis();
+    if (currentTimeRobot - previousTimeRobot >= robotMovementInterval)
     {
-    case forward:
-        moveForward();
-        break;
-    case reverse:
-        moveBackwards();
-        break;
+        switch (direction)
+        {
+        case forward:
+            moveForward();
+            break;
+        case reverse:
+            moveBackwards();
+            break;
 
-    case right:
-        moveRight();
-        break;
+        case right:
+            moveRight();
+            break;
 
-    case left:
-        moveLeft();
-        break;
+        case left:
+            moveLeft();
+            break;
 
-    case stop:
-        stopMove();
-        break;
+        case stop:
+            stopMove();
+            break;
+        }
+        previousTimeRobot = currentTimeRobot;
     }
+}
+void DirectionControl::speedControl()
+{
+    analogWrite(ENA, robotSpeed);
+    analogWrite(ENB, robotSpeed);
+}
+
+void DirectionControl::setRobotSpeed(int s)
+{
+    robotSpeed = s;
+    speedControl();
+}
+
+int DirectionControl::getRobotSpeed()
+{
+    return robotSpeed;
 }
 
 void DirectionControl::setCurrentRobotDirection(int d)
@@ -115,23 +138,29 @@ void DirectionControl::stopMove()
 # 11 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
 
 
+
+
+
 DirectionControl directionControl = DirectionControl();
 SensorServo sensorServo = SensorServo();
 SensorUltraSonic ultraSonic = SensorUltraSonic();
 
 Pins pins;
 
-const int stopMovingInterval = 500;
-int motorUpdate = 0;
-bool goFlag = true;
+bool flag = false;
+unsigned long previousTimeFlag = 0;
+int flagInterval = 1000;
+unsigned long currentTimeFlag = 0;
 
 void setup()
 {
   Serial.println("Lanuching Setup");
   Serial.begin(9600);
   directionControl.direcetionSetup();
+  directionControl.speedControl();
   sensorServo.sensorServoSetup();
   ultraSonic.ultraSonicSetup();
+  directionControl.setRobotSpeed(255);
   directionControl.directionSelect(directionControl.direction::stop);
 }
 
@@ -140,23 +169,38 @@ void loop()
   sensorServo.ServoMovementRoutine();
   ultraSonic.measureDistance();
 
-  if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::left)
+  currentTimeFlag = millis();
+
+  if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && flag == true)
   {
+    //directionControl.setRobotSpeed(MAX_SPEED);
     directionControl.directionSelect(directionControl.direction::left);
+    flag = false;
   }
-  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && directionControl.getCurrentRobotDirection() != directionControl.direction::forward)
+  else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && flag == true)
+
   {
-    directionControl.directionSelect(directionControl.direction::forward);
-  }
-  else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::right)
-  {
+
+    //directionControl.setRobotSpeed(MAX_SPEED);
     directionControl.directionSelect(directionControl.direction::right);
+    flag = false;
   }
-  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::reverse)
+  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && flag == true)
   {
+
+    // directionControl.setRobotSpeed(HALF_SPEED);
+    directionControl.directionSelect(directionControl.direction::forward);
+    flag = false;
+  }
+  else if (/*ultraSonic.getDistance() <= 5*/ sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false)
+  {
+    //directionControl.setRobotSpeed(MAX_SPEED);
     directionControl.directionSelect(directionControl.direction::reverse);
+    flag = false;
   }
 
-
-
+  if (currentTimeFlag - previousTimeFlag >= flagInterval)
+  {
+    flag = true;
+  }
 }

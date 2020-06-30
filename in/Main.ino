@@ -10,23 +10,29 @@
 #include "SensorUltraSonic.h"
 #include "Pins.h"
 
+#define MAX_SPEED 255
+#define HALF_SPEED (MAX_SPEED / 2)
+
 DirectionControl directionControl = DirectionControl();
 SensorServo sensorServo = SensorServo();
 SensorUltraSonic ultraSonic = SensorUltraSonic();
 
 Pins pins;
 
-const int stopMovingInterval = 500;
-int motorUpdate = 0;
-bool goFlag = true;
+bool flag = false;
+unsigned long previousTimeFlag = 0;
+int flagInterval = 5000;
+unsigned long currentTimeFlag = 0;
 
 void setup()
 {
   Serial.println("Lanuching Setup");
   Serial.begin(9600);
   directionControl.direcetionSetup();
+  directionControl.speedControl();
   sensorServo.sensorServoSetup();
   ultraSonic.ultraSonicSetup();
+  directionControl.setRobotSpeed(255);
   directionControl.directionSelect(directionControl.direction::stop);
 }
 
@@ -35,23 +41,38 @@ void loop()
   sensorServo.ServoMovementRoutine();
   ultraSonic.measureDistance();
 
-  if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::left)
-  {
-    directionControl.directionSelect(directionControl.direction::left);
-  }
-  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && directionControl.getCurrentRobotDirection() != directionControl.direction::forward)
-  {
-    directionControl.directionSelect(directionControl.direction::forward);
-  }
-  else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::right)
-  {
-    directionControl.directionSelect(directionControl.direction::right);
-  }
-  else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::reverse)
-  {
-    directionControl.directionSelect(directionControl.direction::reverse);
-  }
-  
+  currentTimeFlag = millis();
 
- 
+  if (currentTimeFlag - previousTimeFlag >= flagInterval)
+  {
+    previousTimeFlag = millis();
+    flag = true;
+  }
+
+  if (flag)
+  {
+    if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false)
+    {
+      //directionControl.setRobotSpeed(MAX_SPEED);
+      directionControl.directionSelect(directionControl.direction::left);
+    }
+    else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false)
+
+    {
+      //directionControl.setRobotSpeed(MAX_SPEED);
+      directionControl.directionSelect(directionControl.direction::right);
+    }
+    else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true)
+    {
+
+      // directionControl.setRobotSpeed(HALF_SPEED);
+      directionControl.directionSelect(directionControl.direction::forward);
+    }
+    else if (/*ultraSonic.getDistance() <= 5*/ sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false)
+    {
+      //directionControl.setRobotSpeed(MAX_SPEED);
+      directionControl.directionSelect(directionControl.direction::reverse);
+    }
+    flag = false;
+  }
 }

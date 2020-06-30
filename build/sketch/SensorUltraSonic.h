@@ -9,20 +9,25 @@ private:
     int duration = 0;
     int distance = 0;
     int count = 0;
-    int initialCondition = 1000;
-    const int measurementInterval = 500;
+    int clearCount = 0;
+    int initialCondition = 500;
 
-    long update = 0;
+    const int measurementInterval = 250;
+
+    unsigned long update = 0;
 
     const int echo = A5;
     const int trig = A4;
 
+    void setDistance(int);
+    void setIsClearCount(int);
+
 public:
     void measureDistance();
     void ultraSonicSetup();
-    void setDistance(int);
 
     int getDistance();
+    int getIsClearCount();
 
     bool isClear();
 };

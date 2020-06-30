@@ -8,33 +8,56 @@ void DirectionControl::direcetionSetup()
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
+    pinMode(ENA, OUTPUT);
+    pinMode(ENB, OUTPUT);
     Serial.println("Motor setup complete");
 }
 
 // Robot directional control state machine
 void DirectionControl::directionSelect(int direction)
 {
-    switch (direction)
+    currentTimeRobot = millis();
+    if (currentTimeRobot - previousTimeRobot >= robotMovementInterval)
     {
-    case forward:
-        moveForward();
-        break;
-    case reverse:
-        moveBackwards();
-        break;
+        switch (direction)
+        {
+        case forward:
+            moveForward();
+            break;
+        case reverse:
+            moveBackwards();
+            break;
 
-    case right:
-        moveRight();
-        break;
+        case right:
+            moveRight();
+            break;
 
-    case left:
-        moveLeft();
-        break;
+        case left:
+            moveLeft();
+            break;
 
-    case stop:
-        stopMove();
-        break;
+        case stop:
+            stopMove();
+            break;
+        }
+        previousTimeRobot = currentTimeRobot;
     }
+}
+void DirectionControl::speedControl()
+{
+    analogWrite(ENA, robotSpeed);
+    analogWrite(ENB, robotSpeed);
+}
+
+void DirectionControl::setRobotSpeed(int s)
+{
+    robotSpeed = s;
+    speedControl();
+}
+
+int DirectionControl::getRobotSpeed()
+{
+    return robotSpeed;
 }
 
 void DirectionControl::setCurrentRobotDirection(int d)

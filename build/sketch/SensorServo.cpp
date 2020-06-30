@@ -19,29 +19,29 @@ void SensorServo::ServoMovementRoutine()
     switch (servoState)
     {
     case 1:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
+        currentTimeServo = millis();
+        if (currentTimeServo - previousTime >= servoMoveInterval)
         {
             servoMoveCentre();
-            previousTime = currentTime;
+            previousTime = currentTimeServo;
             servoState = 2;
         }
         break;
     case 2:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
+        currentTimeServo = millis();
+        if (currentTimeServo - previousTime >= servoMoveInterval)
         {
             servoMoveLeft();
-            previousTime = currentTime;
+            previousTime = currentTimeServo;
             servoState = 3;
         }
         break;
     case 3:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
+        currentTimeServo = millis();
+        if (currentTimeServo - previousTime >= servoMoveInterval)
         {
             servoMoveRight();
-            previousTime = currentTime;
+            previousTime = currentTimeServo;
             servoState = 1;
         }
         break;

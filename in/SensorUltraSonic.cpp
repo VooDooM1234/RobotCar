@@ -12,7 +12,7 @@ void SensorUltraSonic::setDistance(int d)
 
 int SensorUltraSonic::getDistance()
 {
-  Serial.print("Get Distance: ");
+ // Serial.print("Get Distance: ");
   Serial.println(distance);
   return distance;
 }
@@ -28,7 +28,7 @@ void SensorUltraSonic::measureDistance()
 {
   if (millis() - update >= measurementInterval && millis() >= initialCondition)
   {
-    if (count = 1)
+    if (count != 0)
     {
       update += measurementInterval;
       digitalWrite(trig, LOW);
@@ -44,20 +44,30 @@ void SensorUltraSonic::measureDistance()
       setDistance(distance);
       count = 0;
     }
-    count++;
+    count = 1;
   }
+}
+
+void SensorUltraSonic::setIsClearCount(int c)
+{
+  clearCount = c;
+}
+
+int SensorUltraSonic::getIsClearCount()
+{
+  return clearCount;
 }
 
 bool SensorUltraSonic::isClear()
 {
   if (this->distance >= 15)
   {
-   // Serial.println("Returning Clear");
+    clearCount++;
     return true;
   }
   else
   {
-   // Serial.println("Returning object detected");
+    clearCount--;
     return false;
   }
 }
