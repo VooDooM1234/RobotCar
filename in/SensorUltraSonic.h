@@ -3,8 +3,11 @@
 #include <Arduino.h>
 //#include "Pins.h"
 
+bool isClear(int);
+
 class SensorUltraSonic
 {
+    
 private:
     int duration = 0;
     int distance = 0;
@@ -24,6 +27,6 @@ public:
 
     int getDistance();
 
-    bool isClear();
+    
 };
 #endif

@@ -42,9 +42,9 @@ int SensorUltraSonic::measureDistance( )
 
 }
 
-bool SensorUltraSonic::isClear()
+bool isClear(int check)
 {
-  if (this->distance >= 15)
+  if (check >= 15)
   {
     // Serial.println("Returning Clear");
     return true;

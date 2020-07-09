@@ -118,7 +118,11 @@ void DirectionControl::stopMove()
 # 14 "e:\\Projects\\RobotCar\\in\\Main.ino" 2
 
 
-# 15 "e:\\Projects\\RobotCar\\in\\Main.ino"
+
+
+
+
+# 19 "e:\\Projects\\RobotCar\\in\\Main.ino"
 DirectionControl directionControl = DirectionControl();
 SensorServo sensorServo = SensorServo();
 SensorUltraSonic ultraSonic = SensorUltraSonic();
@@ -129,19 +133,22 @@ int distanceArray[3];
 
 volatile unsigned long currentTime = 0;
 volatile unsigned long previousTime = 0;
+volatile int z = 0;
+
+const int ENA = 5;
+const int ENB = 6;
 
 const int loopDelay = 500;
-volatile int i = 0;
-int motorUpdate = 0;
-bool goFlag = true;
+
+
 // http://robotics.hobbizine.com/arduinoann.html
 
-/******************************************************************
+/*************************
 
- * Network Configuration - customized per network 
+ * Network Configuration *
 
- ******************************************************************/
-# 36 "e:\\Projects\\RobotCar\\in\\Main.ino"
+ **************************/
+# 43 "e:\\Projects\\RobotCar\\in\\Main.ino"
 const int PatternCount = 8;
 const int InputNodes = 3;
 const int HiddenNodes = InputNodes + 1;
@@ -151,66 +158,79 @@ const float Momentum = 0.9;
 const float InitialWeightMax = 0.5;
 const float Success = 0.0004;
 
-// const byte Input[PatternCount][InputNodes] = {
-//     //LEFT, MIDDLE, RIGHT
+//Input Nodes
+const byte Input[PatternCount][InputNodes] = {
+    //LEFT, MIDDLE, RIGHT
 
-//     {0, 0, 0}, //clear
-//     {0, 0, 1}, //Right
-//     {0, 1, 0}, //Middle
-//     {1, 0, 0}, //Left
-//     {0, 1, 1}, //Right and Middle
-//     {1, 0, 1}, //Left and Right
-//     {1, 1, 0}, //Left and Middle
-//     {1, 1, 1}, //Left, Middle and Right
-// };
+    {0, 0, 0}, //clear
+    {0, 0, 1}, //Right
+    {0, 1, 0}, //Middle
+    {1, 0, 0}, //Left
+    {0, 1, 1}, //Right and Middle
+    {1, 0, 1}, //Left and Right
+    {1, 1, 0}, //Left and Middle
+    {1, 1, 1}, //Left, Middle and Right
+};
 
-// const byte Target[PatternCount][OutputNodes] = {
-//     {directionControl.moveForward},
-//     {directionControl.moveLeft},
-//     {directionControl.moveBackwards},
-//     {directionControl.moveRight},
-//     {directionControl.moveLeft},
-//     {directionControl.moveForward},
-//     {directionControl.moveRight},
-//     {directionControl.moveBackwards}};
+//Target Nodes
+const byte Target[PatternCount][OutputNodes] = {
+    {1, 1},
+    {1, 0},
+    {0, 0},
+    {1, 0},
+    {0, 1},
+    {1, 1},
+    {0, 1},
+    {0, 0}};
 
-// /******************************************************************
-//  * End Network Configuration
-//  ******************************************************************/
+/******************************************************************
 
-// int i, j, p, q, r;
-// int ReportEvery1000;
-// int RandomizedIndex[PatternCount];
-// long TrainingCycle;
-// float Rando;
-// float Error;
-// float Accum;
+ * End Network Configuration
 
-// float Hidden[HiddenNodes];
-// float Output[OutputNodes];
-// float HiddenWeights[InputNodes + 1][HiddenNodes];
-// float OutputWeights[HiddenNodes + 1][OutputNodes];
-// float HiddenDelta[HiddenNodes];
-// float OutputDelta[OutputNodes];
-// float ChangeHiddenWeights[InputNodes + 1][HiddenNodes];
-// float ChangeOutputWeights[HiddenNodes + 1][OutputNodes];
+ ******************************************************************/
+# 81 "e:\\Projects\\RobotCar\\in\\Main.ino"
+int i, j, p, q, r;
+int ReportEvery1000;
+int RandomizedIndex[PatternCount];
+long TrainingCycle;
+float Rando;
+float Error;
+float Accum;
+
+float Hidden[HiddenNodes];
+float Output[OutputNodes];
+float HiddenWeights[InputNodes + 1][HiddenNodes];
+float OutputWeights[HiddenNodes + 1][OutputNodes];
+float HiddenDelta[HiddenNodes];
+float OutputDelta[OutputNodes];
+float ChangeHiddenWeights[InputNodes + 1][HiddenNodes];
+float ChangeOutputWeights[HiddenNodes + 1][OutputNodes];
 
 void setup()
 {
   Serial.println("Lanuching Setup");
   Serial.begin(9600);
-  // randomSeed(analogRead(3));
-  // ReportEvery1000 = 1;
-  // for (p = 0; p < PatternCount; p++)
-  // {
-  //   RandomizedIndex[p] = p;
-  // }
+
   directionControl.direcetionSetup();
   sensorServo.sensorServoSetup();
   ultraSonic.ultraSonicSetup();
-  directionControl.directionSelect(directionControl.direction::stop);
 
-  // train_nn();
+
+  pinMode(ENA, 0x1);
+  pinMode(ENB, 0x1);
+  analogWrite(ENA, 255);
+  analogWrite(ENB, 255);
+
+  // Network Setup
+  randomSeed(analogRead(3));
+  ReportEvery1000 = 1;
+  for (p = 0; p < PatternCount; p++)
+  {
+    RandomizedIndex[p] = p;
+  }
+
+  Serial.println("training nerual network");
+  train_nn();
 }
 
 void loop()
@@ -221,317 +241,446 @@ void loop()
 
     previousTime = currentTime;
 
-    sensorServo.ServoMovementRoutine(i);
-    distanceArray[i] = ultraSonic.measureDistance();
-    Serial.println(distanceArray[i]);
-    i++;
+    sensorServo.ServoMovementRoutine(z);
+    distanceArray[z] = ultraSonic.measureDistance();
+    z++;
     if (sensorServo.getIsServoMovementComplete() == true)
     {
-      i = 0;
+      z = 0;
+      drive_nn();
       sensorServo.isServoMovementComplete(false);
     }
-
   }
-
-  // if (sensorServo.getCurrentServoState() == sensorServo.left && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::left)
-  // {
-  //   directionControl.directionSelect(directionControl.direction::left);
-  // }
-  // else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == true && directionControl.getCurrentRobotDirection() != directionControl.direction::forward)
-  // {
-  //   directionControl.directionSelect(directionControl.direction::forward);
-  // }
-  // else if (sensorServo.getCurrentServoState() == sensorServo.right && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::right)
-  // {
-  //   directionControl.directionSelect(directionControl.direction::right);
-  // }
-  // else if (sensorServo.getCurrentServoState() == sensorServo.centre && ultraSonic.isClear() == false && directionControl.getCurrentRobotDirection() != directionControl.direction::reverse)
-  // {
-  //   directionControl.directionSelect(directionControl.direction::reverse);
-  // }
 }
 
-// void train_nn() {
-//   /******************************************************************
-//     Initialize HiddenWeights and ChangeHiddenWeights
-//   ******************************************************************/
-//   prog_start = 0;
-//   digitalWrite(LEDYEL, LOW);
-//   for ( i = 0 ; i < HiddenNodes ; i++ ) {
-//     for ( j = 0 ; j <= InputNodes ; j++ ) {
-//       ChangeHiddenWeights[j][i] = 0.0 ;
-//       Rando = float(random(100)) / 100;
-//       HiddenWeights[j][i] = 2.0 * ( Rando - 0.5 ) * InitialWeightMax ;
-//     }
-//   }
-//   digitalWrite(LEDYEL, HIGH);
-//   /******************************************************************
-//     Initialize OutputWeights and ChangeOutputWeights
-//   ******************************************************************/
-//   digitalWrite(LEDRED, LOW);
-//   for ( i = 0 ; i < OutputNodes ; i ++ ) {
-//     for ( j = 0 ; j <= HiddenNodes ; j++ ) {
-//       ChangeOutputWeights[j][i] = 0.0 ;
-//       Rando = float(random(100)) / 100;
-//       OutputWeights[j][i] = 2.0 * ( Rando - 0.5 ) * InitialWeightMax ;
-//     }
-//   }
-//   digitalWrite(LEDRED, HIGH);
-//   //SerialUSB.println("Initial/Untrained Outputs: ");
-//   //toTerminal();
-//   /******************************************************************
-//     Begin training
-//   ******************************************************************/
+void train_nn()
+{
+  /******************************************************************
 
-//   for ( TrainingCycle = 1 ; TrainingCycle < 2147483647 ; TrainingCycle++) {
+    Initialize HiddenWeights and ChangeHiddenWeights
 
-//     /******************************************************************
-//       Randomize order of training patterns
-//     ******************************************************************/
+  ******************************************************************/
+# 151 "e:\\Projects\\RobotCar\\in\\Main.ino"
+  for (i = 0; i < HiddenNodes; i++)
+  {
+    for (j = 0; j <= InputNodes; j++)
+    {
+      ChangeHiddenWeights[j][i] = 0.0;
+      Rando = float(random(100)) / 100;
+      HiddenWeights[j][i] = 2.0 * (Rando - 0.5) * InitialWeightMax;
+    }
+  }
 
-//     for ( p = 0 ; p < PatternCount ; p++) {
-//       q = random(PatternCount);
-//       r = RandomizedIndex[p] ;
-//       RandomizedIndex[p] = RandomizedIndex[q] ;
-//       RandomizedIndex[q] = r ;
-//     }
-//     Error = 0.0 ;
-//     /******************************************************************
-//       Cycle through each training pattern in the randomized order
-//     ******************************************************************/
-//     for ( q = 0 ; q < PatternCount ; q++ ) {
-//       p = RandomizedIndex[q];
+  /******************************************************************
 
-//       /******************************************************************
-//         Compute hidden layer activations
-//       ******************************************************************/
-//       digitalWrite(LEDYEL, LOW);
-//       for ( i = 0 ; i < HiddenNodes ; i++ ) {
-//         Accum = HiddenWeights[InputNodes][i] ;
-//         for ( j = 0 ; j < InputNodes ; j++ ) {
-//           Accum += Input[p][j] * HiddenWeights[j][i] ;
-//         }
-//         Hidden[i] = 1.0 / (1.0 + exp(-Accum)) ;
-//       }
-//       digitalWrite(LEDYEL, HIGH);
+    Initialize OutputWeights and ChangeOutputWeights
 
-//       /******************************************************************
-//         Compute output layer activations and calculate errors
-//       ******************************************************************/
-//       digitalWrite(LEDRED, LOW);
-//       for ( i = 0 ; i < OutputNodes ; i++ ) {
-//         Accum = OutputWeights[HiddenNodes][i] ;
-//         for ( j = 0 ; j < HiddenNodes ; j++ ) {
-//           Accum += Hidden[j] * OutputWeights[j][i] ;
-//         }
-//         Output[i] = 1.0 / (1.0 + exp(-Accum)) ;
-//         OutputDelta[i] = (Target[p][i] - Output[i]) * Output[i] * (1.0 - Output[i]) ;
-//         Error += 0.5 * (Target[p][i] - Output[i]) * (Target[p][i] - Output[i]) ;
-//       }
-//       //SerialUSB.println(Output[0]*100);
-//       digitalWrite(LEDRED, HIGH);
-//       /******************************************************************
-//         Backpropagate errors to hidden layer
-//       ******************************************************************/
-//       digitalWrite(LEDYEL, LOW);
-//       for ( i = 0 ; i < HiddenNodes ; i++ ) {
-//         Accum = 0.0 ;
-//         for ( j = 0 ; j < OutputNodes ; j++ ) {
-//           Accum += OutputWeights[i][j] * OutputDelta[j] ;
-//         }
-//         HiddenDelta[i] = Accum * Hidden[i] * (1.0 - Hidden[i]) ;
-//       }
-//       digitalWrite(LEDYEL, HIGH);
+  ******************************************************************/
+# 165 "e:\\Projects\\RobotCar\\in\\Main.ino"
+  for (i = 0; i < OutputNodes; i++)
+  {
+    for (j = 0; j <= HiddenNodes; j++)
+    {
+      ChangeOutputWeights[j][i] = 0.0;
+      Rando = float(random(100)) / 100;
+      OutputWeights[j][i] = 2.0 * (Rando - 0.5) * InitialWeightMax;
+    }
+  }
 
-//       /******************************************************************
-//         Update Inner-->Hidden Weights
-//       ******************************************************************/
+  //Serial.println("Initial/Untrained Outputs: ");
+  //toTerminal();
+  /******************************************************************
 
-//       digitalWrite(LEDRED, LOW);
-//       for ( i = 0 ; i < HiddenNodes ; i++ ) {
-//         ChangeHiddenWeights[InputNodes][i] = LearningRate * HiddenDelta[i] + Momentum * ChangeHiddenWeights[InputNodes][i] ;
-//         HiddenWeights[InputNodes][i] += ChangeHiddenWeights[InputNodes][i] ;
-//         for ( j = 0 ; j < InputNodes ; j++ ) {
-//           ChangeHiddenWeights[j][i] = LearningRate * Input[p][j] * HiddenDelta[i] + Momentum * ChangeHiddenWeights[j][i];
-//           HiddenWeights[j][i] += ChangeHiddenWeights[j][i] ;
-//         }
-//       }
-//       digitalWrite(LEDRED, HIGH);
-//       /******************************************************************
-//         Update Hidden-->Output Weights
-//       ******************************************************************/
-//       digitalWrite(LEDYEL, LOW);
-//       for ( i = 0 ; i < OutputNodes ; i ++ ) {
-//         ChangeOutputWeights[HiddenNodes][i] = LearningRate * OutputDelta[i] + Momentum * ChangeOutputWeights[HiddenNodes][i] ;
-//         OutputWeights[HiddenNodes][i] += ChangeOutputWeights[HiddenNodes][i] ;
-//         for ( j = 0 ; j < HiddenNodes ; j++ ) {
-//           ChangeOutputWeights[j][i] = LearningRate * Hidden[j] * OutputDelta[i] + Momentum * ChangeOutputWeights[j][i] ;
-//           OutputWeights[j][i] += ChangeOutputWeights[j][i] ;
-//         }
-//       }
-//       digitalWrite(LEDYEL, HIGH);
-//     }
+    Begin training
 
-//     /******************************************************************
-//       Every 100 cycles send data to terminal for display and draws the graph on OLED
-//     ******************************************************************/
-//     ReportEvery1000 = ReportEvery1000 - 1;
-//     if (ReportEvery1000 == 0)
-//     {
-//       int graphNum = TrainingCycle / 100;
-//       int graphE1 = Error * 1000;
-//       int graphE = map(graphE1, 3, 80, 47, 0);
-//       ErrorGraph[graphNum] = graphE;
-//       u8g2.firstPage();
-//       do {
-//         drawGraph();
-//       } while ( u8g2.nextPage() );
+  ******************************************************************/
+# 181 "e:\\Projects\\RobotCar\\in\\Main.ino"
+  for (TrainingCycle = 1; TrainingCycle < 2147483647; TrainingCycle++)
+  {
 
-//       SerialUSB.println();
-//       SerialUSB.println();
-//       SerialUSB.print ("TrainingCycle: ");
-//       SerialUSB.print (TrainingCycle);
-//       SerialUSB.print ("  Error = ");
-//       SerialUSB.println (Error, 5);
-//       SerialUSB.print ("  Graph Num: ");
-//       SerialUSB.print (graphNum);
-//       SerialUSB.print ("  Graph Error1 = ");
-//       SerialUSB.print (graphE1);
-//       SerialUSB.print ("  Graph Error = ");
-//       SerialUSB.println (graphE);
+    /******************************************************************
 
-//       toTerminal();
+      Randomize order of training patterns
 
-//       if (TrainingCycle == 1)
-//       {
-//         ReportEvery1000 = 99;
-//       }
-//       else
-//       {
-//         ReportEvery1000 = 100;
-//       }
-//     }
+    ******************************************************************/
+# 188 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    for (p = 0; p < PatternCount; p++)
+    {
+      q = random(PatternCount);
+      r = RandomizedIndex[p];
+      RandomizedIndex[p] = RandomizedIndex[q];
+      RandomizedIndex[q] = r;
+    }
+    Error = 0.0;
+    /******************************************************************
 
-//     /******************************************************************
-//       If error rate is less than pre-determined threshold then end
-//     ******************************************************************/
+      Cycle through each training pattern in the randomized order
 
-//     if ( Error < Success ) break ;
-//   }
-// }
+    ******************************************************************/
+# 199 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    for (q = 0; q < PatternCount; q++)
+    {
+      p = RandomizedIndex[q];
 
-// void drive_nn()
-// {
-//   SerialUSB.println("Running NN Drive Test");
-//   if (Success < Error) {
-//     prog_start = 0;
-//     SerialUSB.println("NN not Trained");
-//   }
-//   while (Error < Success) {
-//     int num;
-//     int farDist = 35;
-//     int closeDist = 7;
-//     float TestInput[] = {0, 0, 0};
+      /******************************************************************
 
-//     int Left = analogRead(A1);   // Collect sonar distances.
-//     int Middle = analogRead(A2);   // Collect sonar distances.
-//     int Right = analogRead(A3);   // Collect sonar distances.
+        Compute hidden layer activations
 
-//     LL1 = map(LL1, 400, 1024, 0, 100);
-//     LL2 = map(LL2, 400, 1024, 0, 100);
-//     LL3 = map(LL3, 400, 1024, 0, 100);
-//     LL4 = map(LL4, 400, 1024, 0, 100);
+      ******************************************************************/
+# 207 "e:\\Projects\\RobotCar\\in\\Main.ino"
+      for (i = 0; i < HiddenNodes; i++)
+      {
+        Accum = HiddenWeights[InputNodes][i];
+        for (j = 0; j < InputNodes; j++)
+        {
+          Accum += Input[p][j] * HiddenWeights[j][i];
+        }
+        Hidden[i] = 1.0 / (1.0 + exp(-Accum));
+      }
 
-//     LL1 = constrain(LL1, 0, 100);
-//     LL2 = constrain(LL2, 0, 100);
-//     LL3 = constrain(LL3, 0, 100);
-//     LL4 = constrain(LL4, 0, 100);
+      /******************************************************************
 
-//     TestInput[0] = float(LL1) / 100;
-//     TestInput[1] = float(LL2) / 100;
-//     TestInput[2] = float(LL3) / 100;
-//     TestInput[3] = float(LL4) / 100;
-// #ifdef DEBUG
-//     SerialUSB.print("Input: ");
-//     SerialUSB.print(TestInput[3], 2);
-//     SerialUSB.print("\t");
-//     SerialUSB.print(TestInput[2], 2);
-//     SerialUSB.print("\t");
-//     SerialUSB.print(TestInput[1], 2);
-//     SerialUSB.print("\t");
-//     SerialUSB.println(TestInput[0], 2);
-// #endif
+        Compute output layer activations and calculate errors
 
-//     InputToOutput(TestInput[0], TestInput[1], TestInput[2], TestInput[3]); //INPUT to ANN to obtain OUTPUT
+      ******************************************************************/
+# 221 "e:\\Projects\\RobotCar\\in\\Main.ino"
+      for (i = 0; i < OutputNodes; i++)
+      {
+        Accum = OutputWeights[HiddenNodes][i];
+        for (j = 0; j < HiddenNodes; j++)
+        {
+          Accum += Hidden[j] * OutputWeights[j][i];
+        }
+        Output[i] = 1.0 / (1.0 + exp(-Accum));
+        OutputDelta[i] = (Target[p][i] - Output[i]) * Output[i] * (1.0 - Output[i]);
+        Error += 0.5 * (Target[p][i] - Output[i]) * (Target[p][i] - Output[i]);
+      }
+      //Serial.println(Output[0]*100);
 
-//     int speedA = Output[0] * 100;
-//     int speedB = Output[1] * 100;
-//     speedA = int(speedA);
-//     speedB = int(speedB);
-// #ifdef DEBUG
-//     SerialUSB.print("Speed: ");
-//     SerialUSB.print(speedA);
-//     SerialUSB.print("\t");
-//     SerialUSB.println(speedB);
-// #endif
-//     motorA(speedA);
-//     motorB(speedB);
-//     delay(50);
-//   }
-// }
+      /******************************************************************
 
-// void toTerminal()
-// {
+        Backpropagate errors to hidden layer
 
-//   for (p = 0; p < PatternCount; p++)
-//   {
-//     Serial.println();
-//     Serial.print("  Training Pattern: ");
-//     Serial.println(p);
-//     Serial.print("  Input ");
-//     for (i = 0; i < InputNodes; i++)
-//     {
-//       Serial.print(Input[p][i], DEC);
-//       Serial.print(" ");
-//     }
-//     Serial.print("  Target ");
-//     for (i = 0; i < OutputNodes; i++)
-//     {
-//       Serial.print(Target[p][i], DEC);
-//       Serial.print(" ");
-//     }
-//     /******************************************************************
-// * Compute hidden layer activations
-// ******************************************************************/
+      ******************************************************************/
+# 238 "e:\\Projects\\RobotCar\\in\\Main.ino"
+      for (i = 0; i < HiddenNodes; i++)
+      {
+        Accum = 0.0;
+        for (j = 0; j < OutputNodes; j++)
+        {
+          Accum += OutputWeights[i][j] * OutputDelta[j];
+        }
+        HiddenDelta[i] = Accum * Hidden[i] * (1.0 - Hidden[i]);
+      }
 
-//     for (i = 0; i < HiddenNodes; i++)
-//     {
-//       Accum = HiddenWeights[InputNodes][i];
-//       for (j = 0; j < InputNodes; j++)
-//       {
-//         Accum += Input[p][j] * HiddenWeights[j][i];
-//       }
-//       Hidden[i] = 1.0 / (1.0 + exp(-Accum));
-//     }
+      /******************************************************************
 
-//     /******************************************************************
-// * Compute output layer activations and calculate errors
-// ******************************************************************/
+        Update Inner-->Hidden Weights
 
-//     for (i = 0; i < OutputNodes; i++)
-//     {
-//       Accum = OutputWeights[HiddenNodes][i];
-//       for (j = 0; j < HiddenNodes; j++)
-//       {
-//         Accum += Hidden[j] * OutputWeights[j][i];
-//       }
-//       Output[i] = 1.0 / (1.0 + exp(-Accum));
-//     }
-//     Serial.print("  Output ");
-//     for (i = 0; i < OutputNodes; i++)
-//     {
-//       Serial.print(Output[i], 5);
-//       Serial.print(" ");
-//     }
-//   }
-// }
+      ******************************************************************/
+# 252 "e:\\Projects\\RobotCar\\in\\Main.ino"
+      for (i = 0; i < HiddenNodes; i++)
+      {
+        ChangeHiddenWeights[InputNodes][i] = LearningRate * HiddenDelta[i] + Momentum * ChangeHiddenWeights[InputNodes][i];
+        HiddenWeights[InputNodes][i] += ChangeHiddenWeights[InputNodes][i];
+        for (j = 0; j < InputNodes; j++)
+        {
+          ChangeHiddenWeights[j][i] = LearningRate * Input[p][j] * HiddenDelta[i] + Momentum * ChangeHiddenWeights[j][i];
+          HiddenWeights[j][i] += ChangeHiddenWeights[j][i];
+        }
+      }
+
+      /******************************************************************
+
+        Update Hidden-->Output Weights
+
+      ******************************************************************/
+# 267 "e:\\Projects\\RobotCar\\in\\Main.ino"
+      for (i = 0; i < OutputNodes; i++)
+      {
+        ChangeOutputWeights[HiddenNodes][i] = LearningRate * OutputDelta[i] + Momentum * ChangeOutputWeights[HiddenNodes][i];
+        OutputWeights[HiddenNodes][i] += ChangeOutputWeights[HiddenNodes][i];
+        for (j = 0; j < HiddenNodes; j++)
+        {
+          ChangeOutputWeights[j][i] = LearningRate * Hidden[j] * OutputDelta[i] + Momentum * ChangeOutputWeights[j][i];
+          OutputWeights[j][i] += ChangeOutputWeights[j][i];
+        }
+      }
+    }
+
+    /******************************************************************
+
+      Every 100 cycles send data to terminal for display and draws the graph on OLED
+
+    ******************************************************************/
+# 282 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    ReportEvery1000 = ReportEvery1000 - 1;
+    if (ReportEvery1000 == 0)
+    {
+      int graphNum = TrainingCycle / 100;
+      int graphE1 = Error * 1000;
+      int graphE = map(graphE1, 3, 80, 47, 0);
+
+      Serial.println();
+      Serial.println();
+      Serial.print("TrainingCycle: ");
+      Serial.print(TrainingCycle);
+      Serial.print("  Error = ");
+      Serial.println(Error, 5);
+      Serial.print("  Graph Num: ");
+      Serial.print(graphNum);
+      Serial.print("  Graph Error1 = ");
+      Serial.print(graphE1);
+      Serial.print("  Graph Error = ");
+      Serial.println(graphE);
+
+      toTerminal();
+
+      if (TrainingCycle == 1)
+      {
+        ReportEvery1000 = 99;
+      }
+      else
+      {
+        ReportEvery1000 = 100;
+      }
+    }
+
+    /******************************************************************
+
+      If error rate is less than pre-determined threshold then end
+
+    ******************************************************************/
+# 318 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    if (Error < Success)
+      break;
+  }
+}
+
+void drive_nn()
+{
+
+  int num;
+  int farDist = 30;
+  int closeDist = 10;
+  float TestInput[] = {0, 0, 0};
+
+  int Left = distanceArray[0]; // Collect sonar distances.
+  int Middle = distanceArray[1]; // Collect sonar distances.
+  int Right = distanceArray[2]; // Collect sonar distances.
+
+  Serial.print("Array: ");
+  Serial.print(distanceArray[0]);
+  Serial.print(" ");
+  Serial.print(distanceArray[1]);
+  Serial.print(" ");
+  Serial.print(distanceArray[2]);
+  Serial.println();
+
+  //CONVERT TO FLOAT BETWEEN 0 AND 1
+  //0 = clear
+  //1 = collision DECTECTED
+
+  if (isClear(Left))
+  {
+    Left = 0;
+  }
+  else
+  {
+    Left = 1;
+  }
+  if (isClear(Middle))
+  {
+    Middle = 0;
+  }
+  else
+  {
+    Middle = 1;
+  }
+  if (isClear(Right))
+  {
+    Right = 0;
+  }
+  else
+  {
+    Right = 1;
+  }
+
+  // Left = map(Left, 0, 100, 0, 1);
+  // Middle = map(Middle, 0, 100, 0, 1);
+  // Right = map(Right, 0, 100, 0, 1);
+
+  // Left = constrain(Left, 0, 100);
+  // Middle = constrain(Middle, 0, 100);
+  // Right = constrain(Right, 0, 100);
+
+  // TestInput[0] = float(Left) / 100;
+  // TestInput[1] = float(Middle) / 100;
+  // TestInput[2] = float(Right) / 100;
+
+  TestInput[0] = float(Left);
+  TestInput[1] = float(Middle);
+  TestInput[2] = float(Right);
+
+  Serial.print("Input: ");
+  Serial.print(TestInput[2], 2);
+  Serial.print("\t");
+  Serial.print(TestInput[1], 2);
+  Serial.print("\t");
+  Serial.println(TestInput[0], 2);
+
+  InputToOutput(TestInput[0], TestInput[1], TestInput[2]); //INPUT to ANN to obtain OUTPUT
+
+  float A = Output[0];
+  float B = Output[1];
+
+  // A = int(A);
+  // B = int(B);
+
+  Serial.print("Output A = ");
+  Serial.println(A);
+  Serial.print("Output B = ");
+  Serial.println(B);
+
+  A = ((A)>=0?(long)((A)+0.5):(long)((A)-0.5));
+  B = ((B)>=0?(long)((B)+0.5):(long)((B)-0.5));
+
+  Serial.print("Rounded Output A = ");
+  Serial.println(A);
+  Serial.print("Rounded Output B = ");
+  Serial.println(B);
+
+  A = int(A);
+  B = int(B);
+  Serial.print("Int Output A = ");
+  Serial.println(A);
+  Serial.print("Int Output B = ");
+  Serial.println(B);
+
+  if (A && B == 1)
+  {
+    directionControl.directionSelect(directionControl.direction::forward);
+  }
+  if (A == 1 && B == 0)
+  {
+    directionControl.directionSelect(directionControl.direction::left);
+  }
+  if (A == 0 && B == 1)
+  {
+    directionControl.directionSelect(directionControl.direction::right);
+  }
+  if (A && B == 0)
+  {
+    directionControl.directionSelect(directionControl.direction::reverse);
+  }
+
+  delay(50);
+}
+
+void toTerminal()
+{
+
+  for (p = 0; p < PatternCount; p++)
+  {
+    Serial.println();
+    Serial.print("  Training Pattern: ");
+    Serial.println(p);
+    Serial.print("  Input ");
+    for (i = 0; i < InputNodes; i++)
+    {
+      Serial.print(Input[p][i], 10);
+      Serial.print(" ");
+    }
+    Serial.print("  Target ");
+    for (i = 0; i < OutputNodes; i++)
+    {
+      Serial.print(Target[p][i], 10);
+      Serial.print(" ");
+    }
+    /******************************************************************
+
+* Compute hidden layer activations
+
+******************************************************************/
+# 467 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    for (i = 0; i < HiddenNodes; i++)
+    {
+      Accum = HiddenWeights[InputNodes][i];
+      for (j = 0; j < InputNodes; j++)
+      {
+        Accum += Input[p][j] * HiddenWeights[j][i];
+      }
+      Hidden[i] = 1.0 / (1.0 + exp(-Accum));
+    }
+
+    /******************************************************************
+
+* Compute output layer activations and calculate errors
+
+******************************************************************/
+# 481 "e:\\Projects\\RobotCar\\in\\Main.ino"
+    for (i = 0; i < OutputNodes; i++)
+    {
+      Accum = OutputWeights[HiddenNodes][i];
+      for (j = 0; j < HiddenNodes; j++)
+      {
+        Accum += Hidden[j] * OutputWeights[j][i];
+      }
+      Output[i] = 1.0 / (1.0 + exp(-Accum));
+    }
+    Serial.print("  Output ");
+    for (i = 0; i < OutputNodes; i++)
+    {
+      Serial.print(Output[i], 5);
+      Serial.println(" ");
+    }
+  }
+}
+
+void InputToOutput(float In1, float In2, float In3)
+{
+  float TestInput[] = {0, 0, 0};
+  TestInput[0] = In1;
+  TestInput[1] = In2;
+  TestInput[2] = In3;
+
+  /******************************************************************
+
+    Compute hidden layer activations
+
+  ******************************************************************/
+# 510 "e:\\Projects\\RobotCar\\in\\Main.ino"
+  for (i = 0; i < HiddenNodes; i++)
+  {
+    Accum = HiddenWeights[InputNodes][i];
+    for (j = 0; j < InputNodes; j++)
+    {
+      Accum += TestInput[j] * HiddenWeights[j][i];
+    }
+    Hidden[i] = 1.0 / (1.0 + exp(-Accum));
+  }
+
+  /******************************************************************
+
+    Compute output layer activations and calculate errors
+
+  ******************************************************************/
+# 524 "e:\\Projects\\RobotCar\\in\\Main.ino"
+  for (i = 0; i < OutputNodes; i++)
+  {
+    Accum = OutputWeights[HiddenNodes][i];
+    for (j = 0; j < HiddenNodes; j++)
+    {
+      Accum += Hidden[j] * OutputWeights[j][i];
+    }
+    Output[i] = 1.0 / (1.0 + exp(-Accum));
+  }
+
+  Serial.print("  Output ");
+  for (i = 0; i < OutputNodes; i++)
+  {
+    Serial.print(Output[i], 5);
+    Serial.print(" ");
+  }
+  Serial.println();
+}

@@ -19,13 +19,12 @@ void SensorServo::ServoMovementRoutine(int servoState)
     switch (servoState)
     {
     case 0:
-    
-        servoMoveCentre();
+
+        servoMoveLeft();
 
         break;
     case 1:
-
-        servoMoveLeft();
+        servoMoveCentre();
 
         break;
     case 2:
@@ -35,41 +34,41 @@ void SensorServo::ServoMovementRoutine(int servoState)
         break;
     }
 }
-    void SensorServo::isServoMovementComplete(bool m)
-    {
-        motorTick = m;
-    }
+void SensorServo::isServoMovementComplete(bool m)
+{
+    motorTick = m;
+}
 
-    bool SensorServo::getIsServoMovementComplete()
-    {
-        return motorTick;
-    }
+bool SensorServo::getIsServoMovementComplete()
+{
+    return motorTick;
+}
 
-    void SensorServo::setCurrentServoState(int state)
-    {
-        currentServoState = state;
-    }
+void SensorServo::setCurrentServoState(int state)
+{
+    currentServoState = state;
+}
 
-    int SensorServo::getCurrentServoState()
-    {
-        return currentServoState;
-    }
+int SensorServo::getCurrentServoState()
+{
+    return currentServoState;
+}
 
-    void SensorServo::servoMoveLeft()
-    {
-        sonarServo.write(45);
-        setCurrentServoState(left);
-        Serial.println("Sonar moving left");
-    }
-    void SensorServo::servoMoveRight()
-    {
-        sonarServo.write(135);
-        setCurrentServoState(right);
-        Serial.println("Sonar moving right");
-    }
-    void SensorServo::servoMoveCentre()
-    {
-        sonarServo.write(90);
-        setCurrentServoState(centre);
-        Serial.println("Sonar moving centre");
-    }
+void SensorServo::servoMoveLeft()
+{
+    sonarServo.write(45);
+    setCurrentServoState(left);
+    Serial.println("Sonar moving left");
+}
+void SensorServo::servoMoveRight()
+{
+    sonarServo.write(135);
+    setCurrentServoState(right);
+    Serial.println("Sonar moving right");
+}
+void SensorServo::servoMoveCentre()
+{
+    sonarServo.write(90);
+    setCurrentServoState(centre);
+    Serial.println("Sonar moving centre");
+}
