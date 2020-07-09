@@ -5,6 +5,7 @@
 
 Pins ultraSonicPins;
 
+
 void SensorUltraSonic::setDistance(int d)
 {
   distance = d;
@@ -24,40 +25,33 @@ void SensorUltraSonic::ultraSonicSetup()
   pinMode(echo, INPUT);
 }
 
-void SensorUltraSonic::measureDistance()
+int SensorUltraSonic::measureDistance( )
 {
-  if (millis() - update >= measurementInterval && millis() >= initialCondition)
-  {
-    if (count = 1)
-    {
-      update += measurementInterval;
-      digitalWrite(trig, LOW);
-      delayMicroseconds(2);
-      digitalWrite(trig, HIGH);
-      delayMicroseconds(10);
-      digitalWrite(trig, LOW);
+  digitalWrite(trig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
 
-      duration = pulseIn(echo, HIGH);
-      distance = (duration * .0343) / 2;
-      Serial.print("Distance (cm): ");
-      Serial.println(distance);
-      setDistance(distance);
-      count = 0;
-    }
-    count++;
-  }
+  duration = pulseIn(echo, HIGH);
+  distance = (duration * .0343) / 2;
+  Serial.print("Distance (cm): ");
+  Serial.println(distance);
+  setDistance(distance);
+  return distance;
+
 }
 
 bool SensorUltraSonic::isClear()
 {
   if (this->distance >= 15)
   {
-   // Serial.println("Returning Clear");
+    // Serial.println("Returning Clear");
     return true;
   }
   else
   {
-   // Serial.println("Returning object detected");
+    // Serial.println("Returning object detected");
     return false;
   }
 }

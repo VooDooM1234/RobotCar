@@ -13,7 +13,6 @@ private:
     volatile unsigned long previousTime = 0;
 
     //initial servo state set to centre postion.
-    int servoState = 1;
     int currentServoState = 0;
 
     bool motorTick = false;
@@ -21,7 +20,7 @@ private:
     void servoMoveLeft();
     void servoMoveRight();
     void servoMoveCentre();
-    void isServoMovementComplete(bool);
+    
     void setCurrentServoState(int);
 
 public:
@@ -30,10 +29,10 @@ public:
     int right = 3;
     
     void sensorServoSetup();
-    void ServoMovementRoutine();
+    void ServoMovementRoutine(int);
 
     bool getIsServoMovementComplete();
-
+void isServoMovementComplete(bool);
     int getCurrentServoState();
 };
 #endif

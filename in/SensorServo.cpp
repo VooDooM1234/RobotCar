@@ -14,75 +14,62 @@ void SensorServo::sensorServoSetup()
 }
 //Servo stat Machine Service routine
 //Switches every interval of 1000ms
-void SensorServo::ServoMovementRoutine()
+void SensorServo::ServoMovementRoutine(int servoState)
 {
     switch (servoState)
     {
+    case 0:
+    
+        servoMoveCentre();
+
+        break;
     case 1:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
-        {
-            servoMoveCentre();
-            previousTime = currentTime;
-            servoState = 2;
-        }
+
+        servoMoveLeft();
+
         break;
     case 2:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
-        {
-            servoMoveLeft();
-            previousTime = currentTime;
-            servoState = 3;
-        }
-        break;
-    case 3:
-        currentTime = millis();
-        if (currentTime - previousTime >= servoMoveInterval)
-        {
-            servoMoveRight();
-            previousTime = currentTime;
-            servoState = 1;
-        }
+
+        servoMoveRight();
+        isServoMovementComplete(true);
         break;
     }
 }
+    void SensorServo::isServoMovementComplete(bool m)
+    {
+        motorTick = m;
+    }
 
-void SensorServo::isServoMovementComplete(bool m)
-{
-    motorTick = m;
-}
+    bool SensorServo::getIsServoMovementComplete()
+    {
+        return motorTick;
+    }
 
-bool SensorServo::getIsServoMovementComplete()
-{
-    return motorTick;
-}
+    void SensorServo::setCurrentServoState(int state)
+    {
+        currentServoState = state;
+    }
 
-void SensorServo::setCurrentServoState(int state)
-{
-    currentServoState = state;
-}
+    int SensorServo::getCurrentServoState()
+    {
+        return currentServoState;
+    }
 
-int SensorServo::getCurrentServoState()
-{
-    return currentServoState;
-}
-
-void SensorServo::servoMoveLeft()
-{
-    sonarServo.write(0);
-    setCurrentServoState(left);
-    Serial.println("Sonar moving left");
-}
-void SensorServo::servoMoveRight()
-{
-    sonarServo.write(180);
-    setCurrentServoState(right);
-    Serial.println("Sonar moving right");
-}
-void SensorServo::servoMoveCentre()
-{
-    sonarServo.write(90);
-    setCurrentServoState(centre);
-    Serial.println("Sonar moving centre");
-}
+    void SensorServo::servoMoveLeft()
+    {
+        sonarServo.write(45);
+        setCurrentServoState(left);
+        Serial.println("Sonar moving left");
+    }
+    void SensorServo::servoMoveRight()
+    {
+        sonarServo.write(135);
+        setCurrentServoState(right);
+        Serial.println("Sonar moving right");
+    }
+    void SensorServo::servoMoveCentre()
+    {
+        sonarServo.write(90);
+        setCurrentServoState(centre);
+        Serial.println("Sonar moving centre");
+    }

@@ -18,7 +18,7 @@ private:
     const int trig = A4;
 
 public:
-    void measureDistance();
+    int measureDistance();
     void ultraSonicSetup();
     void setDistance(int);
 
