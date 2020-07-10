@@ -5,7 +5,6 @@
 
 Pins ultraSonicPins;
 
-
 void SensorUltraSonic::setDistance(int d)
 {
   distance = d;

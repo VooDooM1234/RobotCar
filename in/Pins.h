@@ -9,6 +9,9 @@ typedef struct Pins
   int IN3;
   int IN4;
 
+  int ENA = 5;
+  int ENB = 6;
+
   int echo;
   int trig;
 
